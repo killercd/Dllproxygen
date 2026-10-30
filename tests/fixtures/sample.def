@@ -1,0 +1,4 @@
+LIBRARY sample
+EXPORTS
+  Named @7
+  UnknownShape @9

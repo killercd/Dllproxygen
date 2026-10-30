@@ -1,0 +1,12 @@
+#include "report.h"
+#include <errno.h>
+#include <stdio.h>
+#include <string.h>
+
+static void json(FILE*f,const char*s){fputc('"',f);for(;*s;s++){unsigned char c=(unsigned char)*s;if(c=='"'||c=='\\'){fputc('\\',f);fputc(c,f);}else if(c=='\n')fputs("\\n",f);else if(c=='\r')fputs("\\r",f);else if(c=='\t')fputs("\\t",f);else if(c<32)fprintf(f,"\\u%04x",c);else fputc(c,f);}fputc('"',f);}
+static bool path(char*out,size_t n,const char*d,const char*f){int r=snprintf(out,n,"%s/%s",d,f);return r>0&&(size_t)r<n;}
+bool write_reports(const char*dir,const char*exe,const char*dll,const DpgImports*im,const DpgExports*ex,bool wt,bool wj,char*err,size_t cap){char p[2048];FILE*f;
+    if(wt){if(!path(p,sizeof p,dir,"analysis.txt")||!(f=fopen(p,"wb")))goto io;fprintf(f,"DLLProxyGen analysis\n====================\nEXE: %s\nDLL: %s\nArchitecture: x86-64 PE32+\n\nStatic imports from selected DLL: %zu\n",exe,dll,im->count);for(size_t i=0;i<im->count;i++){const DpgImport*x=&im->items[i];fprintf(f,"- %s",x->by_ordinal?"ordinal #":"");if(x->by_ordinal)fprintf(f,"%u",x->ordinal);else fprintf(f,"%s (hint %u)",x->name,x->hint);fprintf(f,"; ILT RVA 0x%08x; IAT RVA 0x%08x; %s\n",x->ilt_rva,x->iat_rva,x->matched?"matched":"UNRESOLVED");}fprintf(f,"\nExport records: %zu (aliases are separate records; holes omitted)\n\nSignature analysis\n------------------\nNo prototype is asserted. M1/M2 forwarding is signature-independent.\n",ex->count);if(fclose(f)!=0)goto io;}
+    if(wj){if(!path(p,sizeof p,dir,"analysis.json")||!(f=fopen(p,"wb")))goto io;fputs("{\n  \"schema_version\": \"1.0\",\n  \"architecture\": \"x86_64-windows\",\n  \"inputs\": {\"exe\": ",f);json(f,exe);fputs(", \"dll\": ",f);json(f,dll);fputs("},\n  \"imports\": [\n",f);for(size_t i=0;i<im->count;i++){const DpgImport*x=&im->items[i];fputs("    {\"dll\": ",f);json(f,x->dll_name);if(x->by_ordinal)fprintf(f,", \"kind\": \"ordinal\", \"ordinal\": %u",x->ordinal);else{fputs(", \"kind\": \"name\", \"name\": ",f);json(f,x->name);fprintf(f,", \"hint\": %u",x->hint);}fprintf(f,", \"ilt_rva\": %u, \"iat_rva\": %u, \"matched\": %s, \"signature\": {\"status\": \"unknown\"}}%s\n",x->ilt_rva,x->iat_rva,x->matched?"true":"false",i+1<im->count?",":"");}fputs("  ],\n  \"warnings\": [\"Static import presence does not prove a runtime call\", \"No inferred prototype is enabled\"]\n}\n",f);if(fclose(f)!=0)goto io;}
+    return true;
+io:if(cap)snprintf(err,cap,"cannot write report %s: %s",p,strerror(errno));return false;}

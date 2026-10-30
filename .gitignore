@@ -1,0 +1,6 @@
+*.o
+*.exe
+*.dll
+*.dll.a
+tests/work/
+agent.md

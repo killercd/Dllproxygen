@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/dllproxygen/report-1.0.schema.json",
+  "title": "DLLProxyGen analysis report 1.0",
+  "type": "object",
+  "required": ["schema_version", "architecture", "inputs", "imports", "warnings"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "architecture": { "const": "x86_64-windows" },
+    "inputs": {
+      "type": "object",
+      "required": ["exe", "dll"],
+      "properties": { "exe": {"type":"string"}, "dll": {"type":"string"} }
+    },
+    "imports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["dll", "kind", "ilt_rva", "iat_rva", "matched", "signature"],
+        "properties": {
+          "kind": { "enum": ["name", "ordinal"] },
+          "signature": {
+            "type": "object",
+            "required": ["status"],
+            "properties": { "status": { "enum": ["observed", "inferred", "user_verified", "unknown"] } }
+          }
+        }
+      }
+    },
+    "warnings": { "type": "array", "items": {"type":"string"} }
+  }
+}

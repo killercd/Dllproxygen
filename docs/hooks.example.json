@@ -1,0 +1,13 @@
+{
+  "schema_version": "future-1",
+  "note": "Documentation example only; --hooks is rejected until M5 is implemented.",
+  "hooks": [
+    {
+      "export": "ExampleVerifiedFunction",
+      "verification": "user_verified",
+      "return_type": "int",
+      "parameters": ["int value"],
+      "enabled": true
+    }
+  ]
+}
